@@ -56,3 +56,6 @@ scratch/
 # ----------------------------------------
 argocd-ssh-key
 argocd-ssh-key.pub
+
+
+.DS_Store
