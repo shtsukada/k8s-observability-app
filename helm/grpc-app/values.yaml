@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: stsukada/grpc-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 50051

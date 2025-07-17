@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grpc-app.fullname" . }}
+  labels:
+    app: {{ include "grpc-app.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "grpc-app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "grpc-app.name" . }}
+    spec:
+      containers:
+        - name: grpc-app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.port }}
