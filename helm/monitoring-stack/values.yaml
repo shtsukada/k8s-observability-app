@@ -5,6 +5,20 @@ grafana:
     port: 3000
   adminPassword: "admin"
 
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'custom'
+          orgId: 1
+          folder: 'Custom Dashboards'
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/custom
+
+  dashboardsConfigMaps:
+    custom: "grafana-dashboards"
+
 prometheus:
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false

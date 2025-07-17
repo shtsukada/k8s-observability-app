@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  grpc-server-dashboard.json: |
+    {{ .Files.Get "docs/dashboards/grpc-server-dashboard.json" | indent 2 }}
