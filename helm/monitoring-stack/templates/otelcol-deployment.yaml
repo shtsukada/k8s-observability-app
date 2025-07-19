@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.otelcol.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.otelcol.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.otelcol.name }}
+    spec:
+      containers:
+        - name: otelcol
+          image: {{ .Values.otelcol.image }}
+          args: ["--config=/etc/otelcol/config.yaml"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Values.otelcol.configmap }}
