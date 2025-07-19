@@ -4,20 +4,16 @@ grafana:
     type: LoadBalancer
     port: 3000
   adminPassword: "admin"
-
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
       providers:
         - name: 'custom'
           orgId: 1
-          folder: 'Custom Dashboards'
+          folder: ''
           type: file
           options:
             path: /var/lib/grafana/dashboards/custom
-
-  dashboardsConfigMaps:
-    custom: "grafana-dashboards"
 
 prometheus:
   prometheusSpec:
@@ -31,3 +27,29 @@ nodeExporter:
 
 kubeStateMetrics:
   enabled: true
+
+tempo:
+  server:
+    extraArgs:
+      - --search.enabled=true
+  traces:
+    otlp:
+      enabled: true
+      http:
+        enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  persistence:
+    enabled: false
+
+otelcol:
+  enabled: true
+  name: otelcol
+  image: otel/opentelemetry-collector:0.101.0
+  configmap: otelcol-config
+  lokiEndpoint: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push

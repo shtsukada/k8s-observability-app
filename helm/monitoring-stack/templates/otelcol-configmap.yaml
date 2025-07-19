@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.otelcol.configmap }}
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |
+    receivers:
+      k8slogs:
+        include:
+          namespaces: ["grpc-app"]
+        operators:
+          - type: move
+            from: attributes.k8s.pod.name
+            to: resource.pod.name
+
+    exporters:
+      loki:
+        endpoint: {{ .Values.otelcol.lokiEndpoint }}
+
+    service:
+      pipelines:
+        logs:
+          receivers: [k8slogs]
+          exporters: [loki]
