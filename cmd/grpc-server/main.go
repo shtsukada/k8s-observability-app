@@ -14,10 +14,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	pb "github.com/shtsukada/k8s-observability-app/gen/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 var (
+	logger       *zap.Logger
 	tracer       trace.Tracer
 	grpcRequests = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -37,8 +39,20 @@ func (s *server) Echo(ctx context.Context, req *pb.EchoRequest) (*pb.EchoRespons
 	ctx, span := tracer.Start(ctx, "Echo")
 	defer span.End()
 
-	log.Printf("Received gRPC request: %s", req.Message)
+	logger.Info("gRPC request received",
+		zap.String("message", req.Message),
+		zap.String("traceID", span.SpanContext().TraceID().String()),
+		zap.String("spanID", span.SpanContext().SpanID().String()),
+	)
 	return &pb.EchoResponse{Message: "Echo: " + req.Message}, nil
+}
+
+func initLogger() {
+	var err error
+	logger, err = zap.NewProduction()
+	if err != nil {
+		log.Fatalf("failed to initialize zap logger: %v", err)
+	}
 }
 
 func initTracer(ctx context.Context) (func(), error) {
@@ -46,26 +60,23 @@ func initTracer(ctx context.Context) (func(), error) {
 	if err != nil {
 		return nil, err
 	}
-
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 	)
 	otel.SetTracerProvider(tp)
 	tracer = otel.Tracer("grpc-app")
-
-	return func() {
-		if err := tp.Shutdown(ctx); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}, nil
+	return func() { _ = tp.Shutdown(ctx) }, nil
 }
 
 func main() {
 	ctx := context.Background()
 
+	initLogger()
+	defer logger.Sync()
+
 	shutdown, err := initTracer(ctx)
 	if err != nil {
-		log.Fatalf("failed to initialize tracer: %v", err)
+		logger.Fatal("failed to initialize tracer", zap.Error(err))
 	}
 	defer shutdown()
 
@@ -74,22 +85,24 @@ func main() {
 	go func() {
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			logger.Fatal("failed to listen", zap.Error(err))
 		}
 		s := grpc.NewServer()
 		pb.RegisterEchoServiceServer(s, &server{})
-		log.Println("gRPC server listening on :50051")
+		logger.Info("gRPC server listening on :50051")
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			logger.Fatal("failed to serve", zap.Error(err))
 		}
 	}()
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Println("Prometheus metrics endpoint at :8080/metrics")
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		logger.Info("Prometheus metrics endpoint at :8080/metrics")
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			logger.Fatal("metrics server error", zap.Error(err))
+		}
 	}()
 
-	log.Println("gRPC + Metrics + Traces running")
+	logger.Info("gRPC + Metrics + Traces + Logs running")
 	select {}
 }
