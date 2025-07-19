@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grpc-app-eks
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shtsukada/k8s-observability-app.git
+    targetRevision: main
+    path: helm/grpc-app
+    helm:
+      valueFiles:
+        - values.eks.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grpc-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

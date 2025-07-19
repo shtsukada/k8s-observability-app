@@ -1,0 +1,31 @@
+replicaCount: 2
+
+image:
+  repository: stsukada/grpc-app
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  grpcPort: 50051
+  metricsPort: 8080
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 150m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
